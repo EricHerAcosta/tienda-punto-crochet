@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tienda Punto Crochet</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <h1>🧶 Tienda Punto Crochet</h1>
+  <p>Productos hechos a mano, con calma y corazón.</p>
+
+<section class="producto">
+  <img src="imagenes/bolso.jpg" alt="Bolso tejido a mano">
+  <h2>Bolso tejido a mano</h2>
+  <p class="precio">$80.000 COP</p>
+  <button 
+    class="botonAgregar"
+    data-nombre="Bolso tejido a mano"
+    data-precio="80000">
+    Agregar al carrito
+  </button>
+</section>
+
+<section class="producto">
+  <img src="imagenes/gorro.jpg" alt="Gorro tejido a crochet">
+  <h2>Gorro tejido a crochet</h2>
+  <p class="precio">$40.000 COP</p>
+  <button 
+    class="botonAgregar"
+    data-nombre="Gorro tejido a crochet"
+    data-precio="40000">
+    Agregar al carrito
+  </button>
+</section>
+
+<button id="enviarPedido">Enviar pedido por WhatsApp</button>
+
+<section id="carrito">
+  <h2>🧺 Tu carrito</h2>
+  <ul id="listaCarrito"></ul>
+  <p id="totalCarrito">Total: $0</p>
+</section>
+
+
+
+  <script src="script.js"></script>
+</body>
+
+</html>
+

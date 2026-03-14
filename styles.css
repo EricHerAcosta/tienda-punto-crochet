@@ -1,0 +1,64 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f7f3ee;
+  text-align: center;
+  padding: 20px;
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+p {
+  font-size: 1.1rem;
+}
+
+button {
+  padding: 14px 28px;
+  font-size: 1rem;
+  cursor: pointer;
+  background-color: #c9a27e;
+  border: none;
+  border-radius: 8px;
+}
+
+.producto {
+  background-color: white;
+  padding: 20px;
+  max-width: 300px;
+  margin: 30px auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.producto h2 {
+  font-size: 1.3rem;
+}
+
+.precio {
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.producto img {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+#carrito {
+  margin-top: 40px;
+  padding: 20px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  max-width: 400px;
+}
+
+#listaCarrito li {
+  margin-bottom: 10px;
+}
+
+#listaCarrito button {
+  cursor: pointer;
+}
+

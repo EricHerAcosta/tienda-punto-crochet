@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+<meta charset="UTF-8">
+<title>Simulador Péndulo de Newton</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="panel">
+
+<h2>Controles</h2>
+
+<label>Número de esferas</label>
+<input type="range" id="numPendulos" min="1" max="5" value="5">
+<span id="numLabel">5</span>
+
+<label>Masa</label>
+<input type="range" id="masa" min="1" max="10" value="2">
+<span id="masaLabel">2</span>
+
+<label>Coeficiente restitución</label>
+<input type="range" id="restitucion" min="0" max="1" step="0.05" value="1">
+<span id="restLabel">1</span>
+
+<button id="reset">Reiniciar</button>
+
+</div>
+
+<div class="simulacion">
+
+<canvas id="canvas" width="800" height="400"></canvas>
+
+<h3>Energía del sistema</h3>
+<canvas id="grafico" width="800" height="150"></canvas>
+
+</div>
+
+</div>
+
+<script type="module" src="app.js"></script>
+
+</body>
+</html>
