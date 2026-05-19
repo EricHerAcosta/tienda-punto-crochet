@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>GravityLab - Module 3 Test</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #050510; }
+        #sim-container { width: 100vw; height: 100vh; }
+        #ui-layer { position: absolute; top: 10px; left: 10px; color: white; font-family: sans-serif; pointer-events: auto;}
+        button { padding: 5px 10px; cursor: pointer; background: #333; color: white; border: 1px solid #555; }
+        button:hover { background: #555; }
+    </style>
+</head>
+<body>
+    <div id="sim-container"></div>
+    <div id="ui-layer">
+        <h2>Módulo 3 (Simulation Controller - MVC Base)</h2>
+        <p>El código ahora está bajo un patrón MVC puro con requestAnimationFrame orquestado.</p>
+        <button id="btn-pause">Pausar</button>
+        <button id="btn-play">Reanudar</button>
+        <button id="btn-fast">x3 Velocidad</button>
+        <button id="btn-normal">x1 Velocidad</button>
+        <button id="btn-reset">Reset</button>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { Body } from '../src/core/Body.js';
+        import { SimulationController } from '../src/core/SimulationController.js';
+
+        // Inicializamos TODA la app con una sola clase (El patrón MVC en acción)
+        const app = new SimulationController('sim-container');
+
+        function setupScene() {
+            // Escenario Estándar
+            const sol = new Body("Sol", 3000, new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0), 6, "#ff0044");
+            const b1 = new Body("B1", 10, new THREE.Vector3(60, 0, 0), new THREE.Vector3(0, 7.07, 0), 2, "#00ffaa");
+            const b2 = new Body("B2", 10, new THREE.Vector3(0, 0, -80), new THREE.Vector3(-6, 0, 0), 2, "#44aaff");
+            const luna = new Body("Luna", 0.5, new THREE.Vector3(65, 0, 0), new THREE.Vector3(0, 8.5, 0), 0.8, "#ffffff");
+
+            app.addBody(sol);
+            app.addBody(b1);
+            app.addBody(b2);
+            app.addBody(luna);
+        }
+
+        setupScene();
+        // Que comience el bucle de renderizado animado
+        app.start();
+
+        // Controladores provisorios para certificar la abstracción del MVC
+        document.getElementById("btn-pause").onclick  = () => app.pause();
+        document.getElementById("btn-play").onclick   = () => app.start();
+        document.getElementById("btn-fast").onclick   = () => app.setTimeScale(3);
+        document.getElementById("btn-normal").onclick = () => app.setTimeScale(1);
+        document.getElementById("btn-reset").onclick  = () => {
+            app.reset();
+            setupScene(); 
+            app.start(); // volver a la acción tras reset
+        };
+    </script>
+</body>
+</html>

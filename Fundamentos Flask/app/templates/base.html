@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio Virtual de Física</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Chart.js para las gráficas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- MathJax para ecuaciones LaTeX -->
+    <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <header class="glass-header">
+            <h1><a href="/">LabFísica Virtual</a></h1>
+            <nav class="top-nav">
+                <a href="/">Inicio</a>
+                <div class="dropdown">
+                    <button class="dropbtn">Experimentos ▼</button>
+                    <div class="dropdown-content">
+                        <a href="/simuladores/inverso-cuadrado">Módulo 1: Inverso Cuadrado</a>
+                        <a href="/simuladores/efecto-fotoelectrico">Módulo 2: Efecto Fotoeléctrico</a>
+                        <a href="/simuladores/cuerpo-negro">Módulo 3: Radiación de C. Negro</a>
+                        <a href="/simuladores/carga-masa">Módulo 4: Relación e/m</a>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+        
+        <footer class="glass-footer">
+            <p>Laboratorio Virtual de Física Moderna realizado por Eric H. A. &copy; 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

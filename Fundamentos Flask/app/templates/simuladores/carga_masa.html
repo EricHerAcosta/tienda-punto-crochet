@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block head %}
+    <script src="{{ url_for('static', filename='js/modules/carga_masa.js') }}" defer></script>
+    <style>
+        .input-with-unit { display: flex; gap: 0.5rem; margin-bottom: 0.2rem; width: 100%; align-items: center;}
+        .input-with-unit input[type="number"], .input-with-unit select {
+            flex: 1 1 50%; min-width: 0; padding: 0.4rem;
+            background: rgba(0, 0, 0, 0.2); color: #f8fafc;
+            border: 1px solid var(--glass-border); border-radius: 4px;
+        }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); color: white; padding: 8px; border-radius: 5px; cursor: pointer; transition: all 0.2s;}
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+            z-index: 1000; align-items: center; justify-content: center; display: none;
+        }
+        .modal-content {
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px; max-width: 800px; width: 90%; max-height: 85vh; overflow-y: auto; padding: 30px; position: relative;
+        }
+        .bulb-box {
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 480px; border: 1px solid var(--glass-border);
+            border-radius: 12px; margin-bottom: 20px; 
+            background: radial-gradient(circle at center, #0f172a, #000); 
+            overflow: hidden; position: relative; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Toggles Modernos */
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; vertical-align: middle; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-tg { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 24px; border: 1px solid var(--glass-border); }
+        .slider-tg:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 3px; background-color: var(--text-color); transition: .4s; border-radius: 50%; }
+        input:checked + .slider-tg { background-color: var(--primary-color); }
+        input:focus + .slider-tg { box-shadow: 0 0 1px var(--primary-color); }
+        input:checked + .slider-tg:before { transform: translateX(24px); background-color: white;}
+        .lbl-switch { margin-left: 10px; font-size: 0.9rem; color: #cbd5e1; user-select: none; }
+
+        /* Panel de Reto Oculto */
+        .lab-panel {
+            background: rgba(139, 92, 246, 0.1); border: 1px solid #8b5cf6; border-radius: 8px; padding: 15px; margin-top: 15px; display: none; position: relative;
+        }
+
+        /* Pestañas */
+        .tab-headers { display: flex; gap: 5px; margin-bottom: 10px; }
+        .tab-btn { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); padding: 8px 15px; color: #94a3b8; cursor: pointer; border-radius: 8px 8px 0 0; border-bottom: none; transition: .2s; }
+        .tab-btn.active { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: #38bdf8; border-bottom: none; font-weight: bold;}
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadein 0.3s; }
+        @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+        .btn-solution { position: absolute; right: 20px; bottom: 25px; background: rgba(255, 204, 0, 0.2); border: 1px solid #ffcc00; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 14px;}
+        .btn-solution:hover { transform: scale(1.1); background: rgba(255, 204, 0, 0.4); }
+
+        
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="simulator-layout">
+
+    <!-- PANEL IZQUIERDO: CONTROLES -->
+    <section class="controls-panel glass-panel">
+        <h2 style="color: #38bdf8; margin-bottom: 10px;">Control Tubo Fino</h2>
+        
+        <!-- Toggle Laboratorio Master -->
+        <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <label class="switch">
+              <input type="checkbox" id="mode-toggle">
+              <span class="slider-tg"></span>
+            </label>
+            <span class="lbl-switch" style="font-weight: bold; color: #f472b6;">Activar Modo Laboratorio 🧪</span>
+        </div>
+
+        <div class="control-group">
+            <label id="lbl-tension" for="tension-slider">Tensión Aceleradora (\(V\)):</label>
+            <div class="input-with-unit">
+                <input type="number" id="tension-num" min="50" max="500" step="5" value="200">
+                <span style="color:#94a3b8; width: 30px;">V</span>
+            </div>
+            <input type="range" id="tension-slider" min="50" max="500" step="5" value="200">
+        </div>
+
+        <div class="control-group">
+            <label id="lbl-b" for="b-slider">Campo Magnético Helmholtz (\(B\)):</label>
+            <div class="input-with-unit">
+                <input type="number" id="b-num" min="0.5" max="3.0" step="0.1" value="1.0">
+                <span style="color:#94a3b8; width: 30px;">mT</span>
+            </div>
+            <input type="range" id="b-slider" min="0.5" max="3.0" step="0.1" value="1.0">
+        </div>
+
+        <!-- Toggles de Ayuda -->
+        <div style="margin-top: 20px;">
+            <label class="switch">
+              <input type="checkbox" id="show-radio-toggle" checked>
+              <span class="slider-tg"></span>
+            </label>
+            <span class="lbl-switch">Dibujar Cinta Métrica (Regla de \(r\))</span>
+        </div>
+
+        <!-- Telemetría Dinámica -->
+        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 15px 0;">
+        <div class="telemetry-box box-glow" id="telemetry-explorador">
+            <h3 style="color: #4ade80; margin-bottom: 10px;">Sensores Activos</h3>
+            <p class="formula-text" id="t-radio">$$ r = ... $$</p>
+            <p class="formula-text" id="t-em">$$ e/m = 1.758 \times 10^{11} \text{ C/kg} $$</p>
+        </div>
+
+        <!-- Panel de Reto Laboratorio -->
+        <div class="lab-panel" id="panel-laboratorio">
+            <h3 style="color: #c4b5fd; margin-bottom: 10px;">Desafío J.J. Thomson</h3>
+            <p style="font-size: 0.85rem; color: #ddd; margin-bottom: 10px;">Ocultamos el valor real. Acorde a tu libreta, calcula matemáticamente la relación $e/m_e$ dadas las marcas fijas grabadas en la Ampolla:</p>
+            <input type="number" id="lab-input" placeholder="Ej: 1.750" style="width: 100%; padding: 8px; margin-bottom: 10px; background: rgba(0,0,0,0.5); border: 1px solid #8b5cf6; color: white;">
+            <span style="font-size: 0.8rem; color:#94a3b8; display:block; margin-bottom:10px;">Escribe el valor $\times 10^{11} \text{ C/kg}$</span>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-verificar" class="btn-primary" style="flex: 1; background: #8b5cf6;">Validar mi Cálculo</button>
+            </div>
+            <!-- Botón Bombilla -->
+            <button id="btn-resolver" class="btn-solution" title="Mostrar Solución Paso a Paso">💡</button>
+
+            <p id="lab-feedback" style="font-size:0.9rem; font-weight:bold; margin-top: 10px; text-align:center; display:none;"></p>
+        </div>
+
+        <!-- Recursos Educativos / Ejemplos -->
+        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 15px 0;">
+        <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Recursos Educativos</h3>
+        <button id="btn-tutorial" class="btn-primary" style="width: 100%; margin-bottom: 10px;">📖 Leer Cuaderno de Thomson</button>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button id="btn-ejemplo1" class="btn-secondary" style="flex: 1;">Ej. Clásico e/m</button>
+            <button id="btn-ejemplo2" class="btn-secondary" style="flex: 1;">Magnetismo Terrestre</button>
+        </div>
+
+    </section>
+
+    <!-- PANEL DERECHO: VISUALIZACIÓN LUMINOSA Y ESQUEMAS -->
+    <section class="visual-panel">
+        
+        <div class="tab-headers">
+            <button class="tab-btn active" onclick="openTab('resultados')">Resultados (Haz Circular)</button>
+            <button class="tab-btn" onclick="openTab('esquema')">Montaje Instrumental</button>
+        </div>
+
+        <div id="tab-resultados" class="tab-content active">
+            <div class="bulb-box">
+                <h3 style="position: absolute; top: 15px; left: 20px; color: rgba(255,255,255,0.4); font-size: 0.95rem; margin:0;">Cámara de Vacío Argón (Corte Frontal)</h3>
+                <button id="btn-info-chart" class="btn-info" style="position: absolute; top:15px; right: 20px; background: rgba(56, 189, 248, 0.2); border: 1px solid var(--primary-color); border-radius: 50%; width: 24px; height: 24px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="¿Cómo interpretar la Cámara de Vacío?">ℹ️</button>
+                <canvas id="bulb-canvas" width="800" height="600" style="width: 100%; height: 100%;"></canvas>
+            </div>
+        </div>
+
+        <div id="tab-esquema" class="tab-content">
+            <div class="bulb-box" style="background: #080c14;">
+                <h3 style="position: absolute; top: 15px; left: 20px; color: rgba(255,255,255,0.4); font-size: 0.95rem; margin:0;">Plano Vectorial del Tubo</h3>
+                <canvas id="esquema-canvas" width="800" height="600" style="width: 100%; height: 100%;"></canvas>
+            </div>
+        </div>
+
+    </section>
+
+</div>
+
+<!-- Modal del Cuaderno Teórico -->
+<div id="tutorial-modal" class="modal-overlay">
+    <div class="modal-content glass-panel">
+        <span id="close-modal" style="position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #f87171;">&times;</span>
+        <h2 style="color: #38bdf8; margin-bottom: 20px; text-align: center;">Tubo de Haz Fino y Relación (e/m)</h2>
+        
+        <p>A finales del siglo XIX, **J.J. Thomson** revolucionó la humanidad al lograr pesar virtualmente la pieza más diminuta conocida: el Electrón. Descubrió que los misteriosos "Rayos Catódicos" eran en realidad partículas poseedoras de carga negativa universal. Para demostrarlo, inyectó partículas en una ampolla de vidrio y les aplicó un poderoso Campo Magnético ($B$).</p>
+        
+        <h3 style="color: #f472b6; margin-top: 20px;">El Efecto de Lorentz Rotacional</h3>
+        <p>Cuando un electrón entra recto a una cámara donde cruza un Campo Magnético Uniforme Uniforme, sufre la Fuerza de Lorentz perpendicularmente, forzándolo a cerrarse en un círculo perfecto. Las fuerzas se igualan: la fuerza magnética $qvB$ y la fuerza centrípeta $mv^2/r$.</p>
+        
+        <h3 style="color: #4ade80; margin-top: 20px;">La Ecuación Dorada del Laboratorio</h3>
+        <p>En el simulador, puedes comprobar cómo igualando las energías cinética y magnética, la matemática arroja que el **Radio ($r$)** dictado por la estela fosforescente depende del voltaje inicial ($V$):</p>
+        <p style="text-align: center; font-size: 1.2rem; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;">$$ \frac{e}{m_e} = \frac{2V}{B^2 r^2} $$</p>
+        
+        <h3 style="color: #f87171; margin-top: 20px;">Cómo Operar este Aparato</h3>
+        <ul>
+            <li><strong>Modo Exploratorio:</strong> Mueve el $V$ para inyectarle furia al electrón (el círculo desearía hacerse más gigante). Mueve la perilla del $B$ para estrangularlo hacia el centro (Fuerza restrictiva).</li>
+            <li><strong>Modo Laboratorio:</strong> Enciende el interruptor principal. El simulador ocultará mis sensores de inteligencia. Deberás ver la rejilla en el vidrio para anotar a mano el tamaño del radio ($r$) en metros. Luego aplícale tu propio Tensión $V$ y fíjale un $B$. Anota todo en la fórmula superior y pon a prueba tu cálculo del Electrón Real.</li>
+        </ul>
+
+        <h3 style="color: #ffcc00; margin-top: 20px;">¿Por qué un Círculo y no una Espiral?</h3>
+        <p>Este simulador asume una <strong>trayectoria circular ideal</strong>, que ocurre cuando la velocidad del electrón es perfectamente perpendicular al campo $B$. Sin embargo, en un laboratorio real existen dos fenómenos que deforman la órbita:</p>
+        <ul>
+            <li><strong>Componente paralela de velocidad:</strong> Si el electrón no sale exactamente perpendicular a $B$, posee una componente $v_\parallel$ que <strong>no es afectada</strong> por la fuerza magnética (ya que $v_\parallel \times B = 0$). El resultado es que el electrón orbita <em>y avanza</em> simultáneamente → se forma una <strong>hélice</strong> (como un resorte estirado en el espacio).</li>
+            <li><strong>Pérdida de energía por colisiones:</strong> Cada vez que el electrón ioniza un átomo de Argón (lo que produce la estela azul visible), pierde una fracción de su energía cinética. Menos velocidad implica menor radio ($r = mv / qB$), así que con cada vuelta el radio se encoge ligeramente → se forma una <strong>espiral que colapsa hacia el centro</strong>.</li>
+        </ul>
+        <p style="background: rgba(255,204,0,0.1); border-left: 3px solid #ffcc00; padding: 10px; border-radius: 4px; margin-top: 10px;">
+            <strong>Nota:</strong> La ecuación $e/m_e = 2V / (B^2 r^2)$ solo es estrictamente válida para el caso circular puro. En futuras versiones de este simulador, se planea añadir un <em>modo avanzado</em> con integración numérica paso-a-paso que reproduzca la espiral realista con pérdida estocástica de energía.
+        </p>
+
+    </div>
+</div>
+
+<!-- Modal Dinámico para Solucionario Paso a Paso -->
+<div id="solution-modal" class="modal-overlay">
+    <div class="modal-content glass-panel" style="max-width: 600px; padding: 30px;">
+        <span id="close-solution" style="position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #f87171;">&times;</span>
+        <h3 style="color: #ffcc00; margin-bottom: 20px; text-align: center;">Solución Manual Detallada</h3>
+        <p style="color: #cbd5e1; margin-bottom: 15px;">Para hallar la constante universal, empleamos la mecánica newtoniana igualada a la energía de voltaje:</p>
+        
+        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #ffcc00; margin-bottom: 20px;">
+            <p><strong>Fórmula Fundamental Analítica:</strong></p>
+            <div id="sol-formula" style="font-size: 1.1rem; text-align: center; margin-top: 10px;">$$ \frac{e}{m_e} = \frac{2V}{B^2 \cdot r^2} $$</div>
+        </div>
+
+        <p style="color: #cbd5e1;">Reemplazando por tus magnitudes actuales del simulador:</p>
+        <ul style="color: #38bdf8; list-style: square;">
+            <li>$V$ (Tensión Aceleradora) = <span id="sol-v"></span> Volts</li>
+            <li>$B$ (Campo Magnético) = <span id="sol-b"></span> Teslas</li>
+            <li>$r$ (Radio de Curvatura) = <span id="sol-r"></span> Metros</li>
+        </ul>
+
+        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #4ade80; margin-top: 20px;">
+            <p><strong>Cálculo Realizado:</strong></p>
+            <div id="sol-final" style="font-size: 1.2rem; text-align: center; margin-top: 10px;"></div>
+        </div>
+        <button id="close-solution-btn" class="btn-primary" style="width: 100%; margin-top: 25px;">Comprendido</button>
+    </div>
+</div>
+
+<!-- Modal Dinámico para Ejemplos e Info -->
+<div id="example-modal" class="modal-overlay">
+    <div class="modal-content glass-panel" style="max-width: 550px; padding: 25px; text-align: center;">
+        <span id="close-example" style="position: absolute; top: 10px; right: 15px; font-size: 28px; cursor: pointer; color: #f87171;">&times;</span>
+        <h3 id="ex-title" style="color: #38bdf8; margin-bottom: 15px;">-</h3>
+        <p id="ex-desc" style="line-height: 1.6; color: #f8fafc; font-size: 1.05rem; text-align: left;"></p>
+        <button id="close-example-btn" class="btn-primary" style="margin-top: 20px;">Entendido</button>
+    </div>
+</div>
+
+<script>
+    function openTab(tabName) {
+        let i;
+        let x = document.getElementsByClassName("tab-content");
+        for (i = 0; i < x.length; i++) {
+            x[i].style.display = "none";
+        }
+        let tablinks = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < x.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById("tab-" + tabName).style.display = "block";
+        event.currentTarget.className += " active";
+    }
+</script>
+
+{% endblock %}

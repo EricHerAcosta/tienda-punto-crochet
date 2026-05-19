@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Efecto Fotoeléctrico - Laboratorio de Física{% endblock %}
+
+{% block content %}
+<div class="simulator-layout">
+    
+    <!-- PANEL IZQUIERDO: CONTROLES -->
+    <aside class="controls-panel glass-panel">
+        <h2 style="margin-bottom: 20px;">Parámetros Incidente</h2>
+        
+        <div class="control-group">
+            <label id="lbl-material" for="material">Material de la Placa Emisora (\(\Phi\)):</label>
+            <select id="material" class="unit-select" style="width: 100%; margin-top: 5px;">
+                <option value="2.28">Sodio (Na) - 2.28 eV</option>
+                <option value="4.08">Aluminio (Al) - 4.08 eV</option>
+                <option value="4.31" selected>Zinc (Zn) - 4.31 eV</option>
+                <option value="4.70">Cobre (Cu) - 4.70 eV</option>
+                <option value="6.35">Platino (Pt) - 6.35 eV</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label id="lbl-lambda" for="lambda-slider">Longitud de Onda (\(\lambda\)):</label>
+            <div class="input-with-unit">
+                <input type="number" id="lambda-num" min="100" max="800" step="1" value="400">
+                <select id="lambda-unit" class="unit-select">
+                    <option value="nm">nm (Nanómetros)</option>
+                </select>
+            </div>
+            <!-- Barra con gradiente para representar el espectro visible -->
+            <input type="range" id="lambda-slider" min="100" max="800" step="1" value="400" 
+                   style="background: linear-gradient(to right, #000 0%, #000 28.5%, #8B00FF 28.6%, #0000FF 42%, #00FF00 57%, #FFFF00 71%, #FF7F00 78%, #FF0000 85%, #FF0000 100%);">
+            <small style="color: #64748b; font-size: 0.8rem; display: flex; justify-content: space-between;">
+                <span>Ultravioleta</span>
+                <span>Visible</span>
+                <span>Infrarrojo</span>
+            </small>
+        </div>
+
+        <div class="control-group">
+            <label id="lbl-intensidad" for="intensidad-slider">Intensidad Luminosa (\(I\)):</label>
+            <div class="input-with-unit">
+                <input type="number" id="intensidad-num" min="0" max="100" step="1" value="50">
+                <select class="unit-select" disabled><option>%</option></select>
+            </div>
+            <input type="range" id="intensidad-slider" min="0" max="100" step="1" value="50">
+        </div>
+
+        <div class="control-group">
+            <label id="lbl-voltaje" for="voltaje-slider">Voltaje Aplicado (\(V\)):</label>
+            <div class="input-with-unit">
+                <input type="number" id="voltaje-num" min="-10" max="10" step="0.1" value="0">
+                <select class="unit-select" disabled><option>V</option></select>
+            </div>
+            <input type="range" id="voltaje-slider" min="-10" max="10" step="0.1" value="0">
+        </div>
+
+        <!-- Interfaz Educativa -->
+        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 15px 0;">
+        <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Recursos del Laboratorio</h3>
+        <button id="btn-tutorial" class="btn-primary" style="width: 100%; margin-bottom: 10px;">📖 Leer Cuaderno Teórico</button>
+        <div style="display: flex; gap: 10px;">
+            <button id="btn-example1" class="btn-secondary" style="flex: 1;">Ej. 1: Zinc (UV)</button>
+            <button id="btn-example2" class="btn-secondary" style="flex: 1;">Ej. 2: Corte Na</button>
+        </div>
+
+        <!-- Telemetría Dinámica -->
+        <div class="telemetry-box box-glow">
+            <h3 style="color: #f472b6; margin-bottom: 10px;">Telemetría de Emisión</h3>
+            <div id="telemetry-content">
+                <p id="t-foton">E. Fotón: --</p>
+                <p id="t-kmax">K max: --</p>
+                <p id="t-vstop">V frenado: --</p>
+                <p id="t-estado" style="font-weight: bold; margin-top: 10px;">Estado: Calculando...</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- PANEL DERECHO: VISUALIZACIÓN Y GRÁFICAS -->
+    <section class="visual-panel">
+        
+        <!-- Canvas Interactivo Superior -->
+        <div class="canvas-container glass-panel" style="flex: 1; min-height: 300px;">
+            <canvas id="physics-canvas"></canvas>
+            <div style="position: absolute; bottom: 10px; width: 100%; text-align: center; color: #94a3b8; font-size: 0.9rem; pointer-events: none;">
+                Tubo de Vacío (Emisor a la izq, Colector a la der)
+            </div>
+        </div>
+
+        <!-- Panel Dual de Gráficas Inferior -->
+        <div class="charts-dual-container" style="display: flex; gap: 20px; flex: 1; min-height: 300px;">
+            <div class="chart-box glass-panel" style="flex: 1; position: relative;">
+                <button id="btn-info-iv" class="btn-info" title="¿Cómo interpretar Corriente vs Voltaje?">ℹ️</button>
+                <canvas id="chart-iv"></canvas>
+            </div>
+            <div class="chart-box glass-panel" style="flex: 1; position: relative;">
+                <button id="btn-info-kmax" class="btn-info" title="¿Cómo interpretar K_max vs Frecuencia?">ℹ️</button>
+                <canvas id="chart-kmax"></canvas>
+            </div>
+        </div>
+        
+    </section>
+
+</div>
+
+<!-- Modal del Cuaderno Teórico -->
+<div id="tutorial-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content glass-panel" style="max-width: 800px; width: 90%; max-height: 85vh; overflow-y: auto; padding: 30px; position: relative;">
+        <span id="close-modal" style="position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #f87171;">&times;</span>
+        <h2 style="color: #38bdf8; margin-bottom: 20px; text-align: center;">El Efecto Fotoeléctrico</h2>
+        
+        <p>El <strong>efecto fotoeléctrico</strong> es un proceso en el cual los electrones son expulsados de una superficie metálica cuando incide sobre ella luz de una frecuencia suficientemente alta. Su explicación llevó a Albert Einstein a proponer que la luz se comporta como un flujo de partículas llamadas <strong>fotones</strong>.</p>
+        
+        <h3 style="color: #f472b6; margin-top: 20px;">1. El Fracaso de la Teoría Clásica</h3>
+        <p>La física clásica basada en la teoría ondulatoria de Maxwell no pudo explicar observaciones como:</p>
+        <ul>
+            <li><strong>Independencia de la intensidad:</strong> Clásicamente, una luz más intensa debería aumentar la la energía cinética máxima de los electrones (\(K_{max}\)), lo cual empíricamente NO ocurre.</li>
+            <li><strong>Frecuencia de corte (\(f_0\)):</strong> Los experimentos mostraron que por debajo de cierta frecuencia umbral (\(f_0\)), la luz jamás emite electrones; sin importar la magnitud de la luz.</li>
+        </ul>
+
+        <h3 style="color: #f472b6; margin-top: 20px;">2. La Explicación de Einstein</h3>
+        <p>Einstein resolvió estas paradojas, postulando que la energía de la luz está distribuida en paquetes discretos llamados <strong>cuantos</strong> o <strong>fotones</strong>, cuya energía individual obedece a <strong>\(E = hf\)</strong> (donde \(h\) es la constante de Planck).</p>
+        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 5px; text-align: center; margin: 15px 0;">
+            $$K_{max} = hf - \phi$$
+        </div>
+        <p>Donde <strong>\(\phi\)</strong> (Función Trabajo) representa la energía base mínima que atrinchera al electrón dentro del metal. Si el fotón impactante tiene fotones con mayor energía a esta barrera (\(E > \phi\)), el electrón salta al vacío y cualquier exceso energético se convierte en energía cinética (velocidad).</p>
+        
+        <h3 style="color: #f472b6; margin-top: 20px;">3. Instrucciones de este Laboratorio Experimental</h3>
+        <ul>
+            <li>Ajusta la intensidad luminosa para ver cómo aumenta la densidad visual en la lluvia de ondas; es tu prueba tangible de que se expulsan <strong>más</strong> electrones pero viajando estrictamente a la <strong>misma velocidad</strong>.</li>
+            <li>Tantea la zona transitoria visual entre los espectros Infrarrojo (Inactivo), Visible (Umbral típico) y Ultravioleta (Emisión veloz agresiva).</li>
+            <li>Aplica <strong>Voltaje Analítico</strong> en reverso arrastrándolo a rango negativo. Presenciarás en persona el fenómeno de Potencial Inverso para detener y ahogar la corriente, obligando a los electrones a retroceder.</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Modal de Explicación Dinámica de Ejemplo -->
+<div id="example-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content glass-panel" style="max-width: 500px; padding: 25px; text-align: center; position: relative;">
+        <span id="close-example" style="position: absolute; top: 10px; right: 15px; font-size: 28px; cursor: pointer; color: #f87171;">&times;</span>
+        <h3 id="ex-title" style="color: #38bdf8; margin-bottom: 15px;">Ejemplo Práctico</h3>
+        <p id="ex-desc" style="line-height: 1.5; color: #f8fafc; font-size: 1.05rem;"></p>
+        <button id="close-example-btn" class="btn-primary" style="margin-top: 20px;">Entendido</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block head %}
+    <script defer src="{{ url_for('static', filename='js/modules/efecto_fotoelectrico.js') }}"></script>
+        <style>
+        .input-with-unit { display: flex; gap: 0.5rem; margin-bottom: 0.2rem; width: 100%; }
+        .input-with-unit input[type="number"], .input-with-unit select {
+            flex: 1 1 50%; min-width: 0; padding: 0.4rem;
+            background: rgba(0, 0, 0, 0.2); color: #f8fafc;
+            border: 1px solid var(--glass-border); border-radius: 4px;
+        }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); color: white; padding: 8px; border-radius: 5px; cursor: pointer; transition: all 0.2s;}
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+            z-index: 1000; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+        }
+        .modal-content ul { margin-left: 20px; line-height: 1.6; }
+        .modal-content li { margin-bottom: 8px; }
+        .btn-info {
+            position: absolute; top: 10px; right: 10px; background: rgba(56, 189, 248, 0.2); 
+            border: 1px solid var(--primary-color); border-radius: 50%; width: 24px; height: 24px; 
+            color: white; font-size: 12px; cursor: pointer; z-index: 10; display: flex; 
+            align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .btn-info:hover { background: var(--primary-color); transform: scale(1.1); }
+    </style>
+{% endblock %}

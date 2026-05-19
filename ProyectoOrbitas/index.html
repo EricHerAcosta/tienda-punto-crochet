@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>GravityLab - Simulador Newtoniano (Sistema Solar Edition)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="sim-container"></div>
+    
+    <!-- HUD Sidebar (Model/Sim control) -->
+    <div id="hud-sidebar" class="glass-panel">
+        <h1 class="hud-title">GravityLab</h1>
+        <p style="margin: 0; color: #94a3b8; font-size: 0.85rem;">Simulador Dinámico de Astrofísica</p>
+        <hr style="border-color: rgba(255,255,255,0.1); width: 100%; margin: 15px 0;">
+        
+        <div class="control-group">
+            <h3 style="margin-bottom:0">Controles de Escena</h3>
+            <div class="control-row" style="margin-top: 10px;">
+                <button id="btn-play" class="btn">Play</button>
+                <button id="btn-pause" class="btn">Pausar</button>
+                <button id="btn-reset" class="btn danger" title="Recargar Sistema Solar Estándar">Reset</button>
+            </div>
+        </div>
+
+        <div class="control-group" style="margin-top: 20px;">
+            <div class="slider-label">
+                <span>Velocidad de Simulación</span>
+                <span id="val-time" class="value-display">1.0x</span>
+            </div>
+            <!-- Expanded to max 100x for outer planets -->
+            <input type="range" id="slider-time" min="0" max="100.0" step="0.5" value="1.0">
+        </div>
+
+        <div class="control-group" style="margin-top: 15px;">
+            <div class="slider-label"><span>Mostrar Proyección Futura</span></div>
+            <select id="toggle-predict" style="background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); padding:5px; border-radius:5px; outline:none;">
+                <option value="true" selected>Sí (Línea Punteada)</option>
+                <option value="false">No (Oculto)</option>
+            </select>
+        </div>
+
+        <div class="control-group" style="margin-top: 20px;">
+            <button id="btn-open-modal" class="btn primary">Forjar Nuevo Astro</button>
+        </div>
+    </div>
+
+    <!-- Telemetry Sidebar (Analytics / Inspector) -->
+    <div id="telemetry-sidebar" class="glass-panel" style="position: absolute; right: 20px; top: 20px; width: 320px; z-index: 10;">
+        <h1 class="hud-title" style="font-size: 1.2rem; background: linear-gradient(90deg, #a78bfa, #f472b6); -webkit-background-clip: text;">Cronómetro y Telemetría</h1>
+        
+        <div class="control-group" style="margin: 15px 0;">
+            <div id="time-indicator" style="text-align:center; color:#6ee7b7; font-size:1.4rem; font-weight:bold; letter-spacing:1px;">
+                Año 0, Día 0
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3 style="margin-top: 0px; margin-bottom:5px;">Conservación del Sistema</h3>
+            <div class="slider-label" title="Suma de mv²/2"><span>E. Cinética (K):</span> <span id="kin-e" class="value-display">0</span></div>
+            <div class="slider-label" title="Suma de -GMm/r"><span>E. Potencial (U):</span> <span id="pot-e" class="value-display">0</span></div>
+            <div class="slider-label" title="Suma de K+U"><span>Energía Total (E):</span> <span id="tot-e" class="value-display" style="color:#fdba74">0</span></div>
+            <div class="slider-label" title="m(rxv)"><span>M. Angular (L):</span> <span id="ang-m" class="value-display" style="color:#6ee7b7">0</span></div>
+        </div>
+
+        <hr style="border-color: rgba(255,255,255,0.1); width: 100%; margin: 15px 0;">
+
+        <div id="inspector-msg" style="color:#94a3b8; font-size: 0.85rem; text-align: center; padding: 10px 0;">
+            [ Clickea un astro para sondearlo y editarlo ]
+        </div>
+
+        <div id="inspector-panel" class="control-group" style="display: none; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(167, 139, 250, 0.3);">
+            <h3 style="color: #a78bfa; margin-top:0;">Sonda Activa</h3>
+            <div class="slider-label"><span>Identificación:</span> <span id="ins-name" class="value-display" style="color:white;">N/A</span></div>
+            <div class="slider-label"><span>Masa Int.:</span> <span id="ins-mass" class="value-display">0</span></div>
+            <div class="slider-label"><span>Velocidad abs.:</span> <span id="ins-vel" class="value-display">0</span></div>
+            <div class="slider-label" style="flex-direction: column; gap:5px; margin-top:5px;">
+                <span>Vector Coordenado (x,y,z):</span> 
+                <span id="ins-pos" class="value-display" style="align-self: flex-start; margin-left:10px;">(0, 0, 0)</span>
+            </div>
+            <button id="btn-edit-body" class="btn" style="margin-top: 15px; width: 100%; background:rgba(255,255,255,0.1);">Modificar Parámetros</button>
+        </div>
+    </div>
+
+    <!-- Modal restrictivo/edicion -->
+    <div id="modal-create" class="modal-overlay" style="display: none;">
+        <div class="glass-panel modal-content">
+            <h2 id="modal-title">Arquitecto Estelar</h2>
+            
+            <div class="input-block">
+                <div class="slider-label"><span>Masa</span><span id="val-mass" class="value-display">10</span></div>
+                <input type="range" id="in-mass" min="0.1" max="5000" step="0.1" value="10">
+            </div>
+
+            <!-- Posición espacial a escala ampliada -->
+            <div class="input-block">
+                <div class="slider-label"><span>Desplazamiento X</span><span id="val-px" class="value-display">150</span></div>
+                <input type="range" id="in-px" min="-4000" max="4000" step="5" value="150">
+            </div>
+            <div class="input-block">
+                <div class="slider-label"><span>Desplazamiento Y</span><span id="val-py" class="value-display">0</span></div>
+                <input type="range" id="in-py" min="-4000" max="4000" step="5" value="0">
+            </div>
+            <div class="input-block">
+                <div class="slider-label"><span>Desplazamiento Z</span><span id="val-pz" class="value-display">0</span></div>
+                <input type="range" id="in-pz" min="-4000" max="4000" step="5" value="0">
+            </div>
+            <hr style="border-color: rgba(255,255,255,0.1); width: 100%; margin: 15px 0;">
+            <div class="input-block">
+                <div class="slider-label"><span>Velocidad X (Vx)</span><span id="val-vx" class="value-display">0</span></div>
+                <input type="range" id="in-vx" min="-50" max="50" step="0.1" value="0">
+            </div>
+            <div class="input-block">
+                <div class="slider-label"><span>Velocidad Y (Vy)</span><span id="val-vy" class="value-display">3.5</span></div>
+                <input type="range" id="in-vy" min="-50" max="50" step="0.1" value="3.5">
+            </div>
+            <div class="input-block">
+                <div class="slider-label"><span>Velocidad Z (Vz)</span><span id="val-vz" class="value-display">0</span></div>
+                <input type="range" id="in-vz" min="-50" max="50" step="0.1" value="0">
+            </div>
+            <div class="input-block">
+                <div class="slider-label"><span>Color Geológico</span></div>
+                <input type="color" id="in-color" value="#00ffaa" style="width:100%; height:40px; background:transparent; border:none; cursor:pointer;">
+            </div>
+            <div class="control-row" style="margin-top: 25px;">
+                <button id="btn-cancel-modal" class="btn">Cancelar</button>
+                <button id="btn-confirm-modal" class="btn primary">Aplicar Dinámica</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { Body } from './src/core/Body.js';
+        import { SimulationController } from './src/core/SimulationController.js';
+        import { UIManager } from './src/ui/UIManager.js';
+
+        const app = new SimulationController('sim-container');
+        const ui = new UIManager(app);
+
+        // Sistema Solar
+        // Constantes Asumidas P/ Simulación Escalar: G=1. M_sol=1000. 1 AU = 100 espaciales.
+        // Velocidad real orbital Earth v_e=29.7km/s -> escala simulada v=sqrt(1000/100) = sqrt(10) = 3.162
+        function loadSolarSystem() {
+            // Radio y UI colores adaptados pedagógicamente. Masas no estables estricto sino aproximadas 
+            const sol      = new Body("Sol", 1000, new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0), 6, "#ffbb00");
+            const mercurio = new Body("Mercurio", 0.05, new THREE.Vector3(38,0,0), new THREE.Vector3(0, 5.13, 0), 1, "#8a8a8a");
+            const venus    = new Body("Venus", 0.8, new THREE.Vector3(72,0,0), new THREE.Vector3(0, 3.72, 0), 1.8, "#eacc91");
+            const tierra   = new Body("Tierra", 1.0, new THREE.Vector3(100,0,0), new THREE.Vector3(0, 3.16, 0), 2.2, "#4b9fe3");
+            const marte    = new Body("Marte", 0.1, new THREE.Vector3(152,0,0), new THREE.Vector3(0, 2.56, 0), 1.4, "#e35e4b");
+            // Para Júpiter, G*M/r => sqrt(1000/520) => ~1.38
+            const jupiter  = new Body("Júpiter", 31.7, new THREE.Vector3(520,0,0), new THREE.Vector3(0, 1.38, 0), 4.5, "#dbab7d");
+            // Saturno => sqrt(1000/950) => ~1.02
+            const saturno  = new Body("Saturno", 9.5, new THREE.Vector3(950,0,0), new THREE.Vector3(0, 1.02, 0), 4.0, "#e8ddaa");
+            
+            // Para Urano, inclinación orbital Z leve
+            const urano  = new Body("Urano", 1.4, new THREE.Vector3(1920,0,0), new THREE.Vector3(0, 0.72, 0.1), 3.0, "#acece5");
+
+            app.addBody(sol);
+            app.addBody(mercurio);
+            app.addBody(venus);
+            app.addBody(tierra);
+            app.addBody(marte);
+            app.addBody(jupiter);
+            app.addBody(saturno);
+            app.addBody(urano);
+        }
+
+        window.addEventListener('gravitylab-reset', () => loadDefaultScenario());
+        function loadDefaultScenario() {
+            app.reset();
+            loadSolarSystem();
+            app.start();
+        }
+
+        loadSolarSystem();
+        app.start();
+        
+        // Colocar cámara atrás para ver Júpiter por defecto:
+        app.renderer.camera.position.set(0, 600, 800);
+        app.renderer.controls.target.set(0,0,0);
+        app.renderer.camera.lookAt(0,0,0);
+    </script>
+</body>
+</html>

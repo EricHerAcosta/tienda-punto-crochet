@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="lobby-container glass-panel">
+    <h2>Experimentos Disponibles</h2>
+    <p>Selecciona un módulo para iniciar la simulación interactiva.</p>
+    
+    <div class="experiments-grid">
+        <a href="/simuladores/inverso-cuadrado" class="experiment-card">
+            <h3>Ley del Inverso del Cuadrado</h3>
+            <p>Explora cómo la intensidad de una fuerza (Gravedad o electromagnetismo) decae exponencialmente al aumentar la distancia a la fuente.</p>
+            <span class="btn-primary">Iniciar Simulación</span>
+        </a>
+        <a href="/simuladores/efecto-fotoelectrico" class="experiment-card">
+            <h3>Efecto Fotoeléctrico</h3>
+            <p>Descubre la naturaleza cuántica de la luz controlando la intensidad y frecuencia de fotones para expulsar electrones de distintos materiales metálicos.</p>
+            <span class="btn-primary">Iniciar Simulación</span>
+        </a>
+        <a href="/simuladores/cuerpo-negro" class="experiment-card">
+            <h3>Radiación de Cuerpo Negro</h3>
+            <p>Descubre el nacimiento de la física cuántica alterando temperaturas para ver cómo la distribución energética y el color obedecen a las leyes de Planck y Wien.</p>
+            <span class="btn-primary">Iniciar Simulación</span>
+        </a>
+        <a href="/simuladores/carga-masa" class="experiment-card">
+            <h3>Relación Carga/Masa (e/m)</h3>
+            <p>Emula el experimento de Thomson utilizando un tubo de haz fino y bobinas de Helmholtz. Calcula y demuestra la proporción fundamental de partículas subatómicas midiendo el radio de su trayectoria bajo el yugo de Lorentz.</p>
+            <span class="btn-primary">Iniciar Simulación</span>
+        </a>
+        <!-- Futuros módulos aquí -->
+    </div>
+</div>
+{% endblock %}

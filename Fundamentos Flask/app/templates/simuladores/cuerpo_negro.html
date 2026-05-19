@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block head %}
+    <script src="{{ url_for('static', filename='js/modules/cuerpo_negro.js') }}" defer></script>
+    <style>
+        .input-with-unit { display: flex; gap: 0.5rem; margin-bottom: 0.2rem; width: 100%; }
+        .input-with-unit input[type="number"], .input-with-unit select {
+            flex: 1 1 50%; min-width: 0; padding: 0.4rem;
+            background: rgba(0, 0, 0, 0.2); color: #f8fafc;
+            border: 1px solid var(--glass-border); border-radius: 4px;
+        }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); color: white; padding: 8px; border-radius: 5px; cursor: pointer; transition: all 0.2s;}
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+            z-index: 1000; align-items: center; justify-content: center; display: none;
+        }
+        .modal-content {
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px; max-width: 800px; width: 90%; max-height: 85vh; overflow-y: auto; padding: 30px; position: relative;
+        }
+        .modal-content ul { margin-left: 20px; line-height: 1.6; }
+        .modal-content li { margin-bottom: 8px; }
+        .btn-info {
+            position: absolute; top: 10px; right: 10px; background: rgba(56, 189, 248, 0.2); 
+            border: 1px solid var(--primary-color); border-radius: 50%; width: 24px; height: 24px; 
+            color: white; font-size: 12px; cursor: pointer; z-index: 10; display: flex; 
+            align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .btn-info:hover { background: var(--primary-color); transform: scale(1.1); }
+        .star-box {
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 180px; border: 1px solid var(--glass-border);
+            border-radius: 12px; margin-bottom: 20px; background: radial-gradient(circle at center, #1a1a1a, #000); overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="simulator-layout">
+
+    <!-- PANEL IZQUIERDO: CONTROLES -->
+    <section class="controls-panel glass-panel">
+        <h2 style="color: #38bdf8; margin-bottom: 10px;">Parámetros Térmicos</h2>
+        
+        <div class="control-group">
+            <label id="lbl-temperatura" for="temperatura-slider">Temperatura del Cuerpo (\(T\)):</label>
+            <div class="input-with-unit">
+                <input type="number" id="temperatura-num" min="100" max="15000" step="50" value="5800">
+                <select class="unit-select" disabled><option>K</option></select>
+            </div>
+            <input type="range" id="temperatura-slider" min="100" max="15000" step="50" value="5800">
+        </div>
+
+        <!-- Interfaz Educativa -->
+        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 15px 0;">
+        <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Recursos Educativos</h3>
+        <button id="btn-tutorial" class="btn-primary" style="width: 100%; margin-bottom: 10px;">📖 Leer Cuaderno de Planck</button>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button id="btn-ejemplo1" class="btn-secondary" style="flex: 1;">Ej. 1: Sol</button>
+            <button id="btn-ejemplo2" class="btn-secondary" style="flex: 1;">Ej. 2: Humano</button>
+        </div>
+        <button id="btn-ejemplo3" class="btn-secondary" style="width: 100%; border-color: #f87171;">Catástrofe UV (Clásica)</button>
+
+        <!-- Telemetría Dinámica -->
+        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 15px 0;">
+        <div class="telemetry-box box-glow">
+            <h3 style="color: #f472b6; margin-bottom: 10px;">Emisiones Detectadas</h3>
+            <p class="formula-text" id="t-lambda-max">$$ \lambda_{max} = ... $$</p>
+            <p class="formula-text" id="t-potencia">$$ e_{total} = ... $$</p>
+        </div>
+
+    </section>
+
+    <!-- PANEL DERECHO: VISUALIZACIÓN Y GRÁFICAS -->
+    <section class="visual-panel">
+        
+        <div class="star-box">
+            <h3 style="position: absolute; top: 10px; left: 15px; color: rgba(255,255,255,0.4); font-size: 0.85rem; margin:0;">Visualizador de Irradiancia Aparente</h3>
+            <canvas id="star-canvas" width="600" height="180" style="width: 100%; height: 100%;"></canvas>
+        </div>
+
+        <div class="chart-box glass-panel" style="flex: 1; position: relative;">
+            <button id="btn-info-chart" class="btn-info" title="¿Cómo interpretar Radiación vs Longitud de Onda?">ℹ️</button>
+            <canvas id="chart-planck"></canvas>
+        </div>
+
+    </section>
+
+</div>
+
+<!-- Modal del Cuaderno Teórico -->
+<div id="tutorial-modal" class="modal-overlay">
+    <div class="modal-content glass-panel">
+        <span id="close-modal" style="position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #f87171;">&times;</span>
+        <h2 style="color: #38bdf8; margin-bottom: 20px; text-align: center;">La Radiación de Cuerpo Negro</h2>
+        
+        <p>Un <strong>cuerpo negro</strong> se define como un objeto ideal que absorbe toda la radiación electromagnética que incide sobre él. Debido a que la absorbe toda, parece negro a temperaturas bajas. Sin embargo, al calentarse, emite radiación de manera característica que **depende únicamente de su temperatura** y no de su composición.</p>
+        
+        <h3 style="color: #f472b6; margin-top: 20px;">1. Las Leyes Fijas (Empíricas)</h3>
+        <ul>
+            <li><strong>Ley de Stefan-Boltzmann:</strong> La potencia total emitida por un cuerpo crece bestialmente ($T^4$) conforme se calienta. Un objeto doble de caliente irradia 16 veces más energía.</li>
+            <li><strong>Ley de Wien:</strong> El "Color" principal de la llama (el pico $\lambda_{max}$) se desplaza hacia las longitudes de onda mortíferas (UV) a medida que sube la temperatura. Por eso el metal al rojo vivo se vuelve blanco enceguecedor si aplicas más calor.</li>
+        </ul>
+
+        <h3 style="color: #f87171; margin-top: 20px;">2. La Catástrofe Ultravioleta</h3>
+        <p>La física clásica de Maxwell intentó explicar esta curva (la <strong>Ley de Rayleigh-Jeans</strong>). Predicaba un absurdo matemático monstruoso: ¡Asumía que al ir hacia la luz Ultravioleta (hacia el $\lambda=0$), la intensidad de emisión crecería infinitamente! Si esto fuera cierto, **un horno casero y tu cuerpo humano destruirían todo a su paso** irradiando explosiones letales de rayos Gamma hacia el pasillo. Los experimentos desmintieron a esta monstruosa profecía de forma rotunda ya que en la realidad, la radiación cae a CERO.</p>
+
+        <h3 style="color: #4ade80; margin-top: 20px;">3. La Revolución de Planck: El Cuanto</h3>
+        <p>En el año 1900, Max Planck salvó la física al formular un postulado sacrílego pero brillante: <strong>"La energía no es libre, es un escalón"</strong>.</p>
+        <p>La energía que libera un átomo no es continua, está empacada a la fuerza en bolitas indestructibles llamadas $E = nhf$. Al usar esta simple concepción, la ecuación encajó perfectamente curando a la campana del error y bautizando el inicio de la <strong>Mecánica Cuántica moderna</strong>.</p>
+
+    </div>
+</div>
+
+<!-- Modal Dinámico para Ejemplos info -->
+<div id="example-modal" class="modal-overlay">
+    <div class="modal-content glass-panel" style="max-width: 500px; padding: 25px; text-align: center;">
+        <span id="close-example" style="position: absolute; top: 10px; right: 15px; font-size: 28px; cursor: pointer; color: #f87171;">&times;</span>
+        <h3 id="ex-title" style="color: #38bdf8; margin-bottom: 15px;">-</h3>
+        <p id="ex-desc" style="line-height: 1.5; color: #f8fafc; font-size: 1.05rem;"></p>
+        <button id="close-example-btn" class="btn-primary" style="margin-top: 20px;">Entendido</button>
+    </div>
+</div>
+
+{% endblock %}

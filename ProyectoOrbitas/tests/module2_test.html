@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>GravityLab - Module 2 Test</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #050510; }
+        #sim-container { width: 100vw; height: 100vh; }
+        #ui-layer { position: absolute; top: 10px; left: 10px; color: white; font-family: sans-serif; pointer-events: none;}
+    </style>
+</head>
+<body>
+    <div id="sim-container"></div>
+    <div id="ui-layer">
+        <h2>Módulo 2 (Renderización y Física unificada)</h2>
+        <p>Arrastra para rotar, Rueda para Zoom (OrbitControls activos)</p>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { Body } from '../src/core/Body.js';
+        import { Simulation } from '../src/core/Simulation.js';
+        import { Renderer } from '../src/graphics/Renderer.js';
+
+        // Inicializar Capa de Simulación (Módulo 1)
+        const sim = new Simulation();
+        // Sistema caótico de 3 cuerpos + estrella grande para testing
+        const sol = new Body("Sol", 3000, new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0), 6, "#ff0044");
+        
+        // Orbita aproximada 1
+        const b1 = new Body("B1", 10, new THREE.Vector3(60, 0, 0), new THREE.Vector3(0, 7.07, 0), 2, "#00ffaa");
+        // Órbita elíptica cruzada
+        const b2 = new Body("B2", 10, new THREE.Vector3(0, 0, -80), new THREE.Vector3(-6, 0, 0), 2, "#44aaff");
+        
+        // Satélite del B1 (Órbita anidada)
+        const luna = new Body("Luna", 0.5, new THREE.Vector3(65, 0, 0), new THREE.Vector3(0, 8.5, 0), 0.8, "#ffffff");
+
+        sim.addBody(sol);
+        sim.addBody(b1);
+        sim.addBody(b2);
+        sim.addBody(luna);
+        sim.play();
+
+        // Inicializar Capa de Renderización (Módulo 2)
+        const renderer = new Renderer('sim-container');
+
+        // Bucle de Vida (Mock del Controller que se hará en el Módulo 3)
+        let lastTime = performance.now();
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            // Delta time (en segundos para la física)
+            const dt = (time - lastTime) / 1000;
+            lastTime = time;
+
+            // Limitar saltos de tiempo (por si cambias de pestaña)
+            let safeDt = Math.min(dt, 0.1);
+
+            // Paso Matemático
+            sim.update(safeDt);
+
+            // Sincronización Gráfica
+            renderer.render(sim.bodies);
+        }
+
+        animate(performance.now());
+    </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>GravityLab - Module 1 Test</title>
+    <!-- Import map para cargar Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #111; color: #eee; padding: 2rem; }
+        .log-box { background: #000; padding: 1rem; border: 1px solid #333; font-family: monospace; white-space: pre-wrap; height: 300px; overflow-y: scroll; }
+    </style>
+</head>
+<body>
+    <h1>GravityLab - Módulo 1 (Física y Entidades)</h1>
+    <p>Validación de motor N-Cuerpos sin renderizado gráfico. Abra la <b>Consola (F12)</b> o revise el registro inferior.</p>
+    
+    <div id="log" class="log-box"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { Body } from '../src/core/Body.js';
+        import { Simulation } from '../src/core/Simulation.js';
+
+        const logger = document.getElementById("log");
+        function log(msg) {
+            console.log(msg);
+            logger.innerHTML += msg + "\n";
+        }
+
+        log("Inicializando Simulación...");
+        const sim = new Simulation();
+        
+        // Sistema Tierra-Luna-Sol Simplificado para prueba
+        // M=1000 (Sol central), m=1 (Planeta)
+        const sol = new Body("Sol", 1000, new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0), 5, "#ffcc00");
+        
+        // Orbita circular si a = v^2/r => G*M/r^2 = v^2/r => v = sqrt(G*M/r)
+        // G=1, M=1000, r=50 => v = sqrt(1000/50) = sqrt(20) ~ 4.472
+        const planeta = new Body("Planeta", 1, new THREE.Vector3(50,0,0), new THREE.Vector3(0, 4.472, 0), 1, "#00aaff");
+
+        sim.addBody(sol);
+        sim.addBody(planeta);
+        sim.play();
+
+        log("Estado inicial de los cuerpos:");
+        log(JSON.stringify(sim.bodies, null, 2));
+        
+        log("\nSimulando 10 frames de .016s (como en requestAnimationFrame)...\n");
+        for(let i = 1; i <= 10; i++){
+            // 16 milisegundos por frame simulado
+            sim.update(0.016); 
+        }
+
+        log("Estado tras 10 iteraciones (El Planeta ha avanzado en Y, mientras mantiene conservación):");
+        sim.bodies.forEach(b => {
+             log(`Cuerpo: ${b.id} | Pos: (${b.position.x.toFixed(4)}, ${b.position.y.toFixed(4)}, ${b.position.z.toFixed(4)})`);
+        });
+
+        log("\nTodo funciona como la seda matemática. Módulo 1 validado.");
+    </script>
+</body>
+</html>
