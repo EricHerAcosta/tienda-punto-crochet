@@ -144,7 +144,8 @@
     <section class="visual-panel">
         
         <!-- Tubo Franck-Hertz Canvas -->
-        <div class="canvas-container glass-panel">
+        <div class="canvas-container glass-panel" style="position: relative;">
+            <button id="btn-info-tube" class="btn-info" title="¿Qué representa esta simulación?">ℹ️</button>
             <canvas id="physics-canvas" width="800" height="380"></canvas>
         </div>
 
@@ -237,6 +238,24 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- 4. MODAL DE INFO / INTERPRETACIÓN DEL MONTAJE ANIMADO -->
+<div id="info-tube-modal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close-modal" id="close-info-tube">&times;</span>
+        <h2 style="color: #38bdf8; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Interpretación de la Simulación del Tubo</h2>
+        
+        <p>Esta simulación representa de forma esquemática el tubo de Franck-Hertz:</p>
+        
+        <h3 style="color: #f472b6; margin: 15px 0 10px;">Elementos e Indicadores del Tubo:</h3>
+        <ul>
+            <li><strong>Cátodo Caliente (K):</strong> Filamento incandescente a la izquierda que emite electrones libres por efecto termoiónico (partículas celestes).</li>
+            <li><strong>Rejilla Aceleradora (G):</strong> Malla de alambre vertical discontinua. Los electrones son atraídos y acelerados hacia ella mediante el potencial acelerador $V_a$.</li>
+            <li><strong>Colector Placa (A):</strong> Electrodo colector a la derecha. Para llegar aquí, los electrones que cruzan la rejilla deben superar un pequeño potencial de frenado retardador $V_r \approx 1.5\text{ V}$.</li>
+            <li><strong>Bandas de Excitación (Glow Vertical):</strong> Zonas donde la energía de los electrones acumulada llega a la energía de excitación del gas ($E_{ex}$). Aquí es donde ocurren las colisiones inelásticas, haciendo brillar el gas de forma característica y absorbiendo la corriente colectora.</li>
+        </ul>
     </div>
 </div>
 {% endblock %}
