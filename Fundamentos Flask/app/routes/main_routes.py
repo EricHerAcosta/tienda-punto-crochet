@@ -37,3 +37,11 @@ def carga_masa_view():
     Ruta para la interfaz gráfica del simulador Relación Carga/Masa.
     """
     return render_template('simuladores/carga_masa.html')
+
+@main_bp.route('/simuladores/franck-hertz')
+def franck_hertz_view():
+    """
+    Ruta para la interfaz gráfica del simulador Franck-Hertz.
+    """
+    return render_template('simuladores/franck_hertz.html')
+
