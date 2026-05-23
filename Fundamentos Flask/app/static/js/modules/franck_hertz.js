@@ -93,11 +93,13 @@ document.addEventListener("DOMContentLoaded", () => {
     function getLayout() {
         // Obtenemos el tamaño real renderizado del contenedor
         const rect = canvas.parentElement.getBoundingClientRect();
+        const width = Math.round(rect.width);
+        const height = Math.round(rect.height);
         
-        // Ajustamos la resolución interna del canvas al tamaño del layout físico
-        if (canvas.width !== rect.width || canvas.height !== rect.height) {
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+        // Ajustamos la resolución interna del canvas si cambia significativamente (> 2px)
+        if (Math.abs(canvas.width - width) > 2 || Math.abs(canvas.height - height) > 2) {
+            canvas.width = width;
+            canvas.height = height;
         }
 
         const tubeWidth = canvas.width * 0.8;
@@ -212,20 +214,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // === CLASE ELECTRÓN OPTIMIZADA ===
     class Electron {
-        constructor() {
+        constructor(startDistributed = false) {
             this.reset();
-            // Espaciar el arranque
-            const layout = getLayout();
-            this.x = layout.tubeX + Math.random() * 30;
+            if (startDistributed) {
+                const layout = getLayout();
+                this.x = layout.tubeX + Math.random() * (layout.gridX - layout.tubeX) * 0.8;
+                this.energy = voltajeAcelerador * ((this.x - layout.tubeX) / (layout.gridX - layout.tubeX));
+            }
         }
 
         reset() {
             const layout = getLayout();
             this.x = layout.tubeX;
             this.y = layout.tubeY + 15 + Math.random() * (layout.tubeHeight - 30);
-            this.vx = 0.3 + Math.random() * 0.4;
-            this.vy = (Math.random() - 0.5) * 0.1;
-            this.energy = 0;
+            this.vx = 0.2;
+            this.vy = (Math.random() - 0.5) * 0.15;
+            this.energy = 0.1; // Energía térmica inicial
             this.dead = false;
         }
 
@@ -234,24 +238,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const gas = GAS_DATABASE[currentGasKey];
             const Eex = gas.excitationEnergy;
+            const C_sq = 0.12; // Constante que relaciona energía cinética (eV) con velocidad^2 (px^2/frame^2)
 
-            // 1. Aceleración
+            // 1. Aceleración / Desaceleración por campo eléctrico
             if (this.x < layout.gridX) {
-                const fraction = (this.x - layout.tubeX) / (layout.gridX - layout.tubeX);
-                this.energy = voltajeAcelerador * fraction;
+                const D_acc = layout.gridX - layout.tubeX;
+                const field = voltajeAcelerador / D_acc;
                 
-                const acc = (voltajeAcelerador / (layout.gridX - layout.tubeX)) * 0.05;
-                this.vx += acc;
+                // Trabajo realizado: dE = F * dx
+                const dEnergy = field * this.vx;
+                this.energy += dEnergy;
+                
+                // Relación física: vx = sqrt(C_sq * energy - vy^2)
+                const speedSq = C_sq * this.energy;
+                this.vx = Math.sqrt(Math.max(0.04, speedSq - this.vy * this.vy));
             } else if (this.x >= layout.gridX && this.x < layout.collectorX) {
-                // Desaceleración
-                const fractionRetard = (this.x - layout.gridX) / (layout.collectorX - layout.gridX);
-                this.energy = Math.max(0, this.energy - retardingPotential * fractionRetard);
+                const D_ret = layout.collectorX - layout.gridX;
                 
-                const dec = (retardingPotential / (layout.collectorX - layout.gridX)) * 0.05;
-                this.vx -= dec;
+                // Trabajo en contra del potencial retardador
+                const dEnergy = -(retardingPotential / D_ret) * this.vx;
+                this.energy = Math.max(0, this.energy + dEnergy);
+                
+                const speedSq = C_sq * this.energy;
+                const calculatedVx = speedSq - this.vy * this.vy;
+                
+                if (calculatedVx <= 0.0025) {
+                    this.dead = true;
+                    return;
+                } else {
+                    this.vx = Math.sqrt(calculatedVx);
+                }
             }
 
-            // 2. Colisión Inelástica (Física conceptual simplificada)
+            // 2. Colisión Inelástica
             if (this.x < layout.gridX && this.energy >= Eex) {
                 let collisionProb = 1.0;
                 if (realismo > 0.05) {
@@ -259,11 +278,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 if (Math.random() < collisionProb) {
+                    // Pérdida discreta de energía
                     this.energy = Math.max(0, this.energy - Eex);
-                    this.vx = Math.sqrt(this.energy) * 0.5 + 0.15;
-                    this.vy = (realismo > 0.1) ? (Math.random() - 0.5) * realismo * 1.2 : 0;
+                    
+                    // Colisión inelástica: velocidad reducida y dispersión angular
+                    const speed = Math.sqrt(C_sq * this.energy);
+                    
+                    if (realismo > 0.1) {
+                        const angle = (Math.random() - 0.5) * realismo * Math.PI * 0.5;
+                        this.vx = Math.max(0.15, speed * Math.cos(angle));
+                        this.vy = speed * Math.sin(angle);
+                    } else {
+                        this.vx = Math.max(0.15, speed);
+                        this.vy = 0;
+                    }
 
-                    // Destello luminoso
+                    // Destello luminoso en el punto de colisión
                     collisionEffects.push({
                         x: this.x,
                         y: this.y,
@@ -438,14 +468,22 @@ document.addEventListener("DOMContentLoaded", () => {
         // 4. Actualizar población de electrones (optimizado y menos denso)
         const targetCount = Math.floor(12 + densidadGas * 8);
         while (particles.length < targetCount) {
-            particles.push(new Electron());
+            // Si la lista está totalmente vacía (inicio), distribuir los electrones a lo largo del tubo
+            const startDistributed = (particles.length === 0);
+            if (startDistributed) {
+                for (let i = 0; i < targetCount; i++) {
+                    particles.push(new Electron(true));
+                }
+            } else {
+                particles.push(new Electron(false));
+            }
         }
 
         particles.forEach((p, idx) => {
             p.update(layout);
             p.draw();
             if (p.dead) {
-                particles[idx] = new Electron();
+                particles[idx] = new Electron(false); // Nace en el cátodo
             }
         });
 
