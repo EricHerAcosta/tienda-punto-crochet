@@ -1,0 +1,25 @@
+{
+  "short_name": "Repostería",
+  "name": "Gestión & Costeo de Repostería PWA",
+  "description": "Plataforma instalable offline-first para gestión operativa, recetario y costeo de repostería con Google Workspace backend",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#fdfbf7",
+  "theme_color": "#c5854f",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "food"]
+}
